@@ -2,11 +2,11 @@
 
 ### Sign files via blockchain + put your money where your mouth is
 
-This project helps open-source developers, and other DIY-types, who'd like to attach user-verifiable digital signatures to their work products (files, code, executables, Docker images, etc.). It provides a way to **sign with their cryptocurrency wallet**, instead of a separate GnuPG keypair or X.509 certificate.
+This project helps open-source developers, and other DIY-types, who'd like to attach user-verifiable digital signatures to their work products (files, code, executables, Docker images, etc.). It provides a way to **sign with your cryptocurrency wallet**, instead of a separate GnuPG keypair or X.509 certificate.
 
 It furthermore proposes that **signatures remain valid only while the signing address holds a *stake* of unspent cryptocurrency**. The stake bonds the publisher to keep their signing key safe & secure, even if they lose interest in the signed products; or otherwise, allows for its revocation with immediate, global effect. These properties aren't as easily achieved by other P2P signing mechanisms.
 
-**Signatures are broadcast in public blockchain transactions,** providing an irrefutably timestamped audit trail, and a succinct delivery mechanism (transaction ID). Alternatively, one can communicate a signature off-chain (without the intrinsic audit trail) and refer to the public ledger just to confirm the stake.
+**Signatures are broadcast in public blockchain transactions,** providing an irrefutably timestamped audit trail, and a succinct delivery mechanism (transaction ID). Alternatively, one can communicate a signature off-chain and refer to the public ledger just to confirm the stake (foregoing the intrinsic audit trail).
 
 Another salient property is that **this doesn't require dedicated software;** one can generate and verify signatures using standard blockchain tools and Unix programs. But, we've also prepared a Python command-line tool that smooths out the process.
 
@@ -86,6 +86,8 @@ Once your signature is published on the blockchain, attach the signature transac
 
 ### Discussion
 
-The stake amount is a social convention: users should expect a high-profile publisher to post something substantial (taking `stakeAd` as advisory only). Besides bonding the publisher, the stake poses one more hurdle to tricking users into accepting a signature by the wrong key. Should the publisher's key become compromised, its signatures will probably be "revoked" immediately, when the ETH stake is stolen. Otherwise, the publisher can revoke by transferring the stake anywhere else. In extremis, they might have to deploy a bot to continually sweep all the ETH pumped in by attackers trying to keep their forged signatures valid! (Talk about softening the blow.)
+The stake amount is a social convention: users should expect a high-profile publisher to post something substantial (taking `stakeAd` as advisory only). Besides bonding the publisher, the stake poses one more hurdle to tricking users into accepting a signature by the wrong key.
+
+Should the publisher's key become compromised, its signatures will probably be "revoked" immediately, when the ETH stake is stolen. Otherwise, the publisher can revoke by transferring the stake anywhere else. In extremis, they might have to deploy a bot to continually sweep all the ETH pumped in by attackers trying to keep their forged signatures valid! (Talk about softening the blow.)
 
 We built our prototype atop Ethereum only because its wallets, browsers, and libraries handle [similar small data payloads](https://medium.com/mycrypto/why-do-we-need-transaction-data-39c922930e92) routinely. There's no dapp or smart contract involved, which we consider a feature. Bitcoin would work almost as well, just with [some cumbersome details](https://ledgerjournal.org/ojs/ledger/article/download/101/93/) around the signing and verification process.
