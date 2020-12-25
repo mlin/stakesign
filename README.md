@@ -55,9 +55,9 @@ If you're paranoid about our Etherscan links, then you can easily cross-referenc
 
 ### Signing files
 
-First you load an Ethereum address with ETH greater than the intended stake amount (to afford transaction fees). 
+First, you load an Ethereum address with ETH greater than the intended stake amount (to afford transaction fees), and announce your address through various media.
 
-Then, `stakesign prepare` runs `sha256sum` on local files and formulates the payload data, which you can then use your cryptocurrency wallet to sign and broadcast.
+Then, `stakesign prepare` runs `sha256sum` on local files and formulates the payload data, which you then use your cryptocurrency wallet to sign and broadcast.
 
 ```
 $ stakesign prepare --stake 0.42 LICENSE
@@ -72,9 +72,9 @@ Trusting local exe:	/usr/bin/sha256sum
 
 ```
 
-See [doc/Signing-MEW.md](doc/Signing-MEW.md) for a walkthrough using [MyEtherWallet](https://www.myetherwallet.com/) to complete the process. Other wallets that let you paste the transaction input hex string (aka "contract data") should work as well. (Offloading this for now has allowed our prototype code to avoid handling any real cryptography.)
+See [doc/Signing-MEW.md](doc/Signing-MEW.md) for a walkthrough using [MyEtherWallet](https://www.myetherwallet.com/) to complete the process. Other wallets that let you paste the transaction input hex string (aka "contract data") should work too. (Offloading this for now has allowed our prototype code to avoid handling any real cryptography.)
 
-Lastly, just announce your public address through varied media, and attach the signature transaction ID to your products.
+Once your signature is published on the blockchain, attach the signature transaction ID to your products and point your users to here for `stakesign verify` or the manual procedure. (Hey, we've got to start somewhere...)
 
 ### Signing git commits & tags
 
