@@ -114,12 +114,14 @@ def check_sig_stake(w3, sig, header, stake_floor_wei, ignore_ad=False):
     )
 
 
-def verify_sha256sum(header, body, exe, ignore_missing):
+def verify_sha256sum(header, body, exe, ignore_missing=False, no_strict=False):
     "run given sha256sum executable to verify signature body"
     assert header["stakesign"] == "sha256sum"
     assert isinstance(body, bytes)
 
-    cmd = [exe, "--check", "--strict"]
+    cmd = [exe, "--check"]
+    if not no_strict:
+        cmd.append("--strict")
     if ignore_missing:
         cmd.append("--ignore-missing")
 
@@ -156,6 +158,11 @@ def cli_subparser(subparsers):
         "--ignore-missing",
         action="store_true",
         help="pass --ignore-missing to sha256sum, if applicable",
+    )
+    parser.add_argument(
+        "--no-strict",
+        action="store_true",
+        help="do not pass --strict to sha256sum (use only if yours doesn't provide this option)",
     )
     parser.add_argument(
         "--expired-ok",
@@ -210,7 +217,13 @@ def cli(args):  # pylint: disable=R0912
             bail("Signature's stated expiration date has passed")
 
     # check stake
-    vs = check_sig_stake(w3, sig, header, w3.toWei(args.stake_floor_eth, "ether"), args.ignore_ad)
+    vs = check_sig_stake(
+        w3,
+        sig,
+        header,
+        w3.toWei(args.stake_floor_eth, "ether"),
+        ignore_ad=args.ignore_ad,
+    )
     print_tsv(
         "Signer's balance now:",
         f"{w3.fromWei(vs.signer_wei, 'ether')}",
@@ -233,7 +246,13 @@ def cli(args):  # pylint: disable=R0912
             )
         print_tsv("  Trusting local exe:", sha256sum_exe)
         print()
-        if not verify_sha256sum(header, body, sha256sum_exe, args.ignore_missing):
+        if not verify_sha256sum(
+            header,
+            body,
+            sha256sum_exe,
+            ignore_missing=args.ignore_missing,
+            no_strict=args.no_strict,
+        ):
             bail("sha256sum verification failed!")
     else:
         bail(
