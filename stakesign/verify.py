@@ -14,6 +14,9 @@ import web3
 from web3.datastructures import AttributeDict
 
 
+DEFAULT_STAKE_FLOOR_ETH = 0.1
+
+
 def get_sig(w3, txid):
     "Query blockchain for signature transaction details"
     tx = w3.eth.getTransaction(txid)
@@ -141,7 +144,7 @@ def cli_subparser(subparsers):
         metavar="0.1",
         dest="stake_floor_eth",
         type=float,
-        default=0.1,
+        default=DEFAULT_STAKE_FLOOR_ETH,
         help="minimum acceptable current ETH balance for signer address",
     )
     parser.add_argument(
@@ -167,7 +170,7 @@ def cli_subparser(subparsers):
     return parser
 
 
-def cli(args):
+def cli(args):  # pylint: disable=R0912
     provider_msg = "(from environment WEB3_PROVIDER_URI)"
     if "WEB3_PROVIDER_URI" not in os.environ:
         os.environ["WEB3_PROVIDER_URI"] = "https://cloudflare-eth.com"
@@ -217,7 +220,7 @@ def cli(args):
     if not vs.enough:
         msg = "Signer's address holds insufficient ETH balance, possibly indicating revocation or compromise!"
         if vs.required_wei_source == "--stake":
-            msg += f"\n        If you're certain this address is trustworthy, rerun with --stake {w3.fromWei(vs.required_wei, 'ether')}"
+            msg += f"\n        If you're certain this address is trustworthy, rerun with --stake {w3.fromWei(vs.signer_wei, 'ether')}"
         bail(msg)
 
     # verify, per mode
@@ -238,6 +241,15 @@ def cli(args):
         )
 
     print_tsv("\n" + color("🗹", ANSI.BHGRN), "Success")
+
+    if math.fabs(args.stake_floor_eth - DEFAULT_STAKE_FLOOR_ETH) < (DEFAULT_STAKE_FLOOR_ETH / 1000):
+        print(
+            color(
+                f"[WARN] Ensure the signer's current {w3.fromWei(vs.signer_wei, 'ether')} ETH stake evinces their ongoing interest in securing it.\n"
+                + f"       Consider setting --stake above the default {DEFAULT_STAKE_FLOOR_ETH} ETH depending on the publisher.",
+                ANSI.BHYEL,
+            )
+        )
 
     if args.verbose:
         print()

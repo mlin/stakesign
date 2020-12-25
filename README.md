@@ -6,7 +6,7 @@ This project helps open-source developers, and other DIY-types, who'd like to at
 
 It furthermore proposes that **signatures remain valid only while the signing address holds a *stake* of unspent cryptocurrency**. The stake bonds the publisher to keep their signing key safe & secure, even if they lose interest in the signed products; or otherwise, allows for its revocation with immediate, global effect. These properties aren't as easily achieved by other P2P signing mechanisms.
 
-**Signatures may be broadcast in public blockchain transactions,** providing irrefutably notarized timestamps and a succinct way to transmit them (transaction ID). Alternatively, one can receive a signature separately and refer to the public blockchain just to confirm the signer's stake.
+**Signatures are broadcast in public blockchain transactions,** providing an irrefutably timestamped audit trail, and a succinct delivery mechanism (transaction ID). Alternatively, one can communicate a signature off-chain (without the intrinsic audit trail) and refer to the public ledger just to confirm the stake.
 
 Another salient property is that **this doesn't require dedicated software;** one can generate and verify signatures using standard blockchain tools and Unix programs. But, we've also prepared a Python command-line tool that smooths out the process.
 
@@ -47,7 +47,7 @@ The tool doesn't really do anything interesting, and you don't have to trust it.
 
 1. your SHA256 file digest(s) match the published signature
 2. the signature transaction's From address is what the publisher has announced
-3. that address *currently* [holds whatever ETH balance](https://etherscan.io/address/0x83cee747e4bcff80938ea1056f925d1c24412f0b) assures you of the signer's ongoing interest in securing it (perhaps, but not necessarily, the amount advertised inside the signature)
+3. that address *currently* [holds an ETH balance](https://etherscan.io/address/0x83cee747e4bcff80938ea1056f925d1c24412f0b) evincing the signer's ongoing interest in securing it (perhaps, but not necessarily, the amount advertised inside the signature)
 
 Additional subjective factors you could look into: (4) the signature transaction's timestamp seems within your expectations; (5) the public activity ledger for the signing address doesn't seem suspicious, e.g. signing tons of stuff the publisher isn't associated with.
 
