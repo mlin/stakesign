@@ -1,0 +1,43 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+
+  lint:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: deps
+      run: sudo pip3 install --system pre-commit black flake8 pylint
+    - name: requirements
+      run: pip3 install -r requirements.txt
+    - name: pre-commit
+      run: pre-commit run --all-files
+
+  test-linux:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: recursive
+    - name: requirements
+      run: pip3 install -r requirements.txt
+    - name: prove
+      run: prove -v test/*.t
+
+  test-macOS:
+    runs-on: macOS-10.15
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: recursive
+    - name: deps
+      run: brew install coreutils
+    - name: requirements
+      run: pip3 install -r requirements.txt
+    - name: prove
+      run: prove -v test/*.t
