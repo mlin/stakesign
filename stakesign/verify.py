@@ -114,7 +114,7 @@ def check_sig_stake(w3, sig, header, stake_floor_wei, ignore_ad=False):
     )
 
 
-def verify_sha256sum(header, body, exe, ignore_missing=False, no_strict=False):
+def verify_sha256sum(header, body, exe, ignore_missing=False, no_strict=False, cwd=None):
     "run given sha256sum executable to verify signature body"
     assert header["stakesign"] == "sha256sum"
     assert isinstance(body, bytes)
@@ -129,7 +129,7 @@ def verify_sha256sum(header, body, exe, ignore_missing=False, no_strict=False):
         tmp.write(body)
         tmp.flush()
         cmd.append(tmp.name)
-        res = subprocess.run(cmd, check=False)
+        res = subprocess.run(cmd, check=False, cwd=cwd)
 
     return res.returncode == 0
 
@@ -170,6 +170,9 @@ def cli_subparser(subparsers):
         help="proceed even if signature's stated expiration date has passed",
     )
     parser.add_argument(
+        "--chdir", "-C", metavar="DIR", type=str, help="change working directory to DIR"
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="display transaction input UTF-8 payload after success",
@@ -184,7 +187,7 @@ def cli(args):  # pylint: disable=R0912
         provider_msg = "(to override, set environment WEB3_PROVIDER_URI)"
 
     print("\t".join(("Trusting ETH gateway:", os.environ["WEB3_PROVIDER_URI"], provider_msg)))
-    from web3.auto import w3
+    from web3.auto import w3  # pylint: disable=C0415
 
     # get transaction info
     if not args.signature.startswith("0x"):
@@ -252,6 +255,7 @@ def cli(args):  # pylint: disable=R0912
             sha256sum_exe,
             ignore_missing=args.ignore_missing,
             no_strict=args.no_strict,
+            cwd=args.chdir,
         ):
             bail("sha256sum verification failed!")
     else:

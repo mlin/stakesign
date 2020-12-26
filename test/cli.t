@@ -74,6 +74,8 @@ is "$?" "1" "not git"
 grep --silent "Not in git repository" stderr.log
 is "$?" "0" "not git message"
 git init
+git config user.email "aphacker@mit.edu"
+git config user.name "Alyssa P. Hacker"
 git add LICENSE
 git commit -m 'stakesign test'
 git tag some-lightweight-tag

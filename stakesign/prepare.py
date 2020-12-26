@@ -33,8 +33,8 @@ def prepare_sha256sum(files, sha256sum_exe, cwd=None, tee=False):
 
 
 def prepare_git(objects, cwd=None):
-    from pygit2 import Repository, Commit, Reference, Tag  # pylint: disable=E0611
-    from pathlib import Path
+    from pygit2 import Repository, Commit, Reference, Tag  # pylint: disable=E0611,C0415
+    from pathlib import Path  # pylint: disable=C0415
 
     # find containing git repo
     cwd = Path(cwd) if cwd else Path.cwd()
@@ -80,6 +80,11 @@ def cli_subparser(subparsers):
     )
     parser.add_argument("FILE", nargs="+", help="filenames or other object identifiers")
     parser.add_argument(
+        "--git",
+        action="store_true",
+        help="identifiers are git commits or tags in the current repository",
+    )
+    parser.add_argument(
         "--stake",
         metavar="0.1",
         dest="stake_ad",
@@ -99,11 +104,6 @@ def cli_subparser(subparsers):
     )
     parser.add_argument(
         "--chdir", "-C", metavar="DIR", type=str, help="change working directory to DIR"
-    )
-    parser.add_argument(
-        "--git",
-        action="store_true",
-        help="object identifiers refer to git commit digest(s) and/or tag(s) in the current repository",
     )
     return parser
 
