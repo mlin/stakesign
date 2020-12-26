@@ -13,7 +13,7 @@ stakesign="python3 -m stakesign"
 export TMPDIR=$(mktemp -d -t stakesign-test-XXXXXX)
 cd "$TMPDIR"
 
-plan tests 15
+plan tests 19
 
 ###################################################################################################
 # stakesign verify
@@ -64,6 +64,26 @@ $stakesign prepare LICENSE --stake 99.00 --expire '2038-01-19 03:14:08+00' | tee
 is "$?" "0" "prepare LICENSE with options"
 grep --silent "0x7b227374616b657369676e223a2273686132353673756d222c22657870697265223a22323033382d30312d31392030333a31343a30385a222c227374616b654164223a7b22455448223a39392e307d7d0a3266393161366633336634663264373265643463643663333633663165373263646464373236623464333563326166333533353666323536613534653735613020204c4943454e53450a" stdout.log
 is "$?" "0" "prepare LICENSE with options correctly"
+
+###################################################################################################
+# git
+###################################################################################################
+
+$stakesign prepare --git HEAD 2> >(tee stderr.log >&2)
+is "$?" "1" "not git"
+grep --silent "Not in git repository" stderr.log
+is "$?" "0" "not git message"
+git init
+git add LICENSE
+git commit -m 'stakesign test'
+git tag some-lightweight-tag
+git tag -a -m 'stakesign test' some-annotated-tag
+
+commit_prefix=$(echo `git rev-parse HEAD` | cut -c1-10)
+$stakesign prepare --git HEAD "$commit_prefix" some-lightweight-tag some-annotated-tag | tee stdout.log
+is "$?" "0" "succeed git refs"
+grep --silent "$(git rev-parse HEAD)" stdout.log && grep --silent '"tag":"some-lightweight-tag"' stdout.log && grep --silent '"tag":"some-annotated-tag","tagObject":"' stdout.log
+is "$?" "0" "resolve git refs"
 
 ###################################################################################################
 # cleanup

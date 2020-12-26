@@ -201,7 +201,7 @@ def cli(args):  # pylint: disable=R0912
     print_tsv(
         " Signature timestamp:",
         f"{sig.timestamp}Z",
-        yellow_if(f"({sig_age} ago)", sig_age < timedelta(days=3)),
+        yellow(f"({sig_age} ago)", sig_age < timedelta(days=3)),
     )
 
     # decode signature, check expiration date
@@ -294,8 +294,8 @@ def color(msg, col):
     return msg
 
 
-def yellow_if(msg, cond):
-    return color(msg, ANSI.BHYEL) if cond else msg
+def yellow(msg, only_if=True):
+    return color(msg, ANSI.BHYEL) if only_if else msg
 
 
 class ANSI:
