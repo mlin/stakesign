@@ -19,10 +19,9 @@ Ethereum transaction [0xd071c0e8fbcbcab8b92f9098c5250d7e1c003f222c94fe0729669bae
 This is nothing more than [GNU sha256sum](https://www.gnu.org/software/coreutils/manual/html_node/sha2-utilities.html)'s output appended to a one-line JSON header. The header advises the recipient to reject the signature if the [ETH balance of the signing key](https://etherscan.io/address/0x83cee747e4bcff80938ea1056f925d1c24412f0b) is below 0.42. To verify this signature at the command line,
 
 ```
-# whichever you prefer:
 $ pip3 install stakesign
-$ conda install -c conda-forge stakesign
 # on macOS, also: brew install coreutils
+# coming soon: conda install -c conda-forge stakesign
 
 # then download LICENSE and verify it:
 $ wget https://github.com/mlin/stakesign/raw/main/LICENSE
@@ -77,6 +76,25 @@ See [doc/Signing-MEW.md](doc/Signing-MEW.md) for a walkthrough using [MyEtherWal
 Once your signature is published on the blockchain, attach the signature transaction ID to your products and point your users to here for `stakesign verify` or the manual procedure. (Hey, we've got to start somewhere...)
 
 ### Signing git commits & tags
+
+The tool can sign and verify git commits & tags instead of files. To verify a git signature, e.g.
+
+```
+$ git clone --branch v1.1.0 https://github.com/mlin/spVCF.git && cd spVCF
+$ stakesign verify 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483
+```
+
+This checks whether the transaction signs the working tree HEAD, which you override to another local revision R with `--git-revision R`.
+
+To prepare signature payloads for commits or tags,
+
+```
+$ stakesign prepare --stake 0.42 --git R [R2 ...]
+```
+
+Where R is `HEAD` to sign the current working tree, or a commit digest, tag, or anything else understood by `git rev-parse`.
+
+The signatures apply to git commit digests. If your repository doesn't use [git's new SHA-256 object format](https://github.blog/2020-10-19-git-2-29-released/), the tool accepts older SHA-1 digests with warnings during signing and verification. [Practical risks from SHA-1](https://git-scm.com/docs/hash-function-transition/) are small, as git now (since mid-2017) includes mitigations for known vulnerabilities; therefore, we've kept the signature approach simple knowing SHA-256 mode is on the way.
 
 ### Signing Docker images
 
