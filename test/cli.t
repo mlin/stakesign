@@ -13,7 +13,7 @@ stakesign="python3 -m stakesign"
 export TMPDIR=$(mktemp -d -t stakesign-test-XXXXXX)
 cd "$TMPDIR"
 
-plan tests 19
+plan tests 31
 
 ###################################################################################################
 # stakesign verify
@@ -86,6 +86,42 @@ $stakesign prepare --git --stake 0.66 HEAD "$commit_prefix" some-lightweight-tag
 is "$?" "0" "succeed git refs"
 grep --silent "$(git rev-parse HEAD)" stdout.log && grep --silent '"tag":"some-lightweight-tag"' stdout.log && grep --silent '"tag":"some-annotated-tag","tagObject":"' stdout.log
 is "$?" "0" "resolve git refs"
+
+git clone https://github.com/mlin/spVCF.git
+git -C spVCF config user.email "aphacker@mit.edu"
+git -C spVCF config user.name "Alyssa P. Hacker"
+git -C spVCF checkout -b wip 5bb4229a162689516
+$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483
+is "$?" "0" "verify signed HEAD"
+git -C spVCF checkout -b wip2 4ad2c2955c4ee2598
+$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483 2> >(tee stderr.log >&2)
+is "$?" "1" "reject unsigned HEAD"
+grep --silent "Signature doesn't apply" stderr.log
+is "$?" "0" "reject unsigned HEAD for correct reason"
+git -C spVCF checkout 20201226
+$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483
+is "$?" "0" "verify lightweight tag"
+git -C spVCF tag -d 20201226
+$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483
+is "$?" "0" "verify lightweight tag missing from local"
+git -C spVCF tag 20201226 v1.1.0
+$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483 2> >(tee stderr.log >&2)
+is "$?" "1" "reject local tag referring to wrong commit"
+grep --silent "refers to a different commit" stderr.log
+is "$?" "0" "reject local tag for correct reason"
+$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483 --git-revision v1.0.0 | tee stdout.log
+is "$?" "0" "verify annotated tag"
+grep --silent 8851a121e5198d74eba19387628711d305d54e33 stdout.log
+is "$?" "0" "verify annotated tag 2"
+git -C spVCF checkout v1.0.0
+git -C spVCF tag -d v1.0.0
+$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483
+is "$?" "0" "verify annotated tag missing from local"
+git -C spVCF tag -a v1.0.0 8851a121e5198d74eba19387628711d305d54e33 -m 'gotcha'
+$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483 2> >(tee stderr.log >&2)
+is "$?" "1" "reject tag with right commit but different annotations"
+grep --silent "differs from the signed tag in annotations" stderr.log
+is "$?" "0" "reject local annotated tag for correct reason"
 
 ###################################################################################################
 # cleanup

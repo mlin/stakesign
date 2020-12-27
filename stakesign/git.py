@@ -130,7 +130,7 @@ def verify(repo, revision, sigbody):  # pylint: disable=R0912,R0915
                     )
                     error_if(
                         local_tag[0].hex != commit_to_verify,
-                        f"The tag '{local_tag[1].shorthand}' refers locally to a different commit than the signed tag.",
+                        f"The local tag '{local_tag[1].shorthand}' refers to a different commit than the signed tag",
                     )
                     if "tagObject" in sig_elt:
                         warnings.add(
@@ -146,7 +146,7 @@ def verify(repo, revision, sigbody):  # pylint: disable=R0912,R0915
                     else:
                         error_if(
                             local_tag[0].target.hex != commit_to_verify,
-                            f"The local annotated tag '{local_tag[0].name}' = {local_tag[0].hex} refers to a different commit than the tag that was signed.",
+                            f"The local annotated tag '{local_tag[0].name}' = {local_tag[0].hex} refers to a different commit than the signed tag",
                         )
                         warnings.add(
                             f"The local tag '{local_tag[1].shorthand}' is annotated, while the signed tag was lightweight"

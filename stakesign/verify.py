@@ -301,7 +301,7 @@ def cli(args):  # pylint: disable=R0912,R0914,R0915
         print(
             yellow(
                 f"[WARN] Ensure the signer's current {w3.fromWei(vs.signer_wei, 'ether')} ETH stake evinces their ongoing interest in securing it.\n"
-                + f"       Consider setting --stake above the default {DEFAULT_STAKE_FLOOR_ETH} ETH to an appropriate amount for the publisher.",
+                + f"       (Set --stake above the default {DEFAULT_STAKE_FLOOR_ETH} ETH minimum to clear this warning.)",
             )
         )
         warnings = True
