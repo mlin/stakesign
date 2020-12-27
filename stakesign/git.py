@@ -52,8 +52,10 @@ def prepare(repo, revisions):
         warnings.append(
             f"The revisions to sign don't include the current working tree HEAD = {head_commit}"
         )
-    else:
-        error_if(repo.status(), f"Dirty working tree for HEAD = {head_commit}")
+    elif repo.status():
+        warnings.append(
+            "Working tree is dirty; signature will apply to clean commit HEAD = " + head_commit
+        )
 
     if not all_sha256:
         warnings.append(

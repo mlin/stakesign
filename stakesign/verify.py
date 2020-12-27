@@ -23,9 +23,7 @@ def get_sig(w3, txid):
     txr = w3.eth.getTransactionReceipt(txid)
     block_num = tx.blockNumber
     if not block_num:
-        raise web3.exceptions.TransactionNotFound(
-            "transaction has no block number yet (wait awhile and retry)"
-        )
+        raise web3.exceptions.TransactionNotFound("transaction pending (no block number yet)")
     blk = w3.eth.getBlock(block_num)
 
     signer = txr["from"]
@@ -206,7 +204,10 @@ def cli(args):  # pylint: disable=R0912,R0914,R0915
     try:
         sig = get_sig(w3, args.signature)
     except web3.exceptions.TransactionNotFound as err:
-        bail("Transaction and/or receipt not found on Ethereum network: " + str(err))
+        bail(
+            "Transaction not found on Ethereum network; check transaction ID, or try later or through another gateway: "
+            + str(err)
+        )
 
     utcnow = datetime.utcnow().replace(tzinfo=None)
     sig_age = utcnow - sig.timestamp
