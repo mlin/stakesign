@@ -15,7 +15,7 @@ To prepare signature payloads for commits or tags,
 $ stakesign prepare --stake 0.42 --git R [R ...]
 ```
 
-Where R is `HEAD` to sign the current working tree, or a commit digest, tag, or anything else understood by `git rev-parse`. You can cover multiple commits and tags in one signature. As with sha256sum mode, send the prepared hex string in an Etherum transaction and share the transaction ID.
+Where R is `HEAD` to sign the current working tree, or a commit digest, tag, or anything else understood by `git rev-parse`. You can cover multiple commits and tags in one signature. As with sha256sum mode, send the prepared hex string in an Ethereum transaction and share the transaction ID.
 
 **git signature security:** the signatures cover git commit digests, tag names, and (for annotated tags) tag object digests. If your repository doesn't use [git's new SHA-256 object format](https://github.blog/2020-10-19-git-2-29-released/), the tool accepts older SHA-1 digests with warnings during both signing and verification. [Practical risks from SHA-1](https://git-scm.com/docs/hash-function-transition/) are low, as git now (since mid-2017) includes mitigations for known vulnerabilities; therefore, we've kept the signature approach simple, knowing that SHA-256 mode is on the way. Example payload from the signature used above:
 
