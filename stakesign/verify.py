@@ -138,6 +138,7 @@ def cli_subparser(subparsers):
     parser = subparsers.add_parser(
         "verify",
         help="verify existing signature(s)",
+        description="The transaction is, by default, expected to sign file(s) in the current working directory.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("signature", help="signature Transaction ID (0x...)")
@@ -170,6 +171,11 @@ def cli_subparser(subparsers):
         help="proceed even if signature's stated expiration date has passed",
     )
     parser.add_argument(
+        "--git-revision",
+        metavar="HEAD",
+        help="if signature pertains to git, verify this local revision instead of current checkout HEAD",
+    )
+    parser.add_argument(
         "--chdir", "-C", metavar="DIR", type=str, help="change working directory to DIR"
     )
     parser.add_argument(
@@ -180,7 +186,7 @@ def cli_subparser(subparsers):
     return parser
 
 
-def cli(args):  # pylint: disable=R0912
+def cli(args):  # pylint: disable=R0912,R0914,R0915
     provider_msg = "(from environment WEB3_PROVIDER_URI)"
     if "WEB3_PROVIDER_URI" not in os.environ:
         os.environ["WEB3_PROVIDER_URI"] = "https://cloudflare-eth.com"
@@ -258,9 +264,29 @@ def cli(args):  # pylint: disable=R0912
             cwd=args.chdir,
         ):
             bail("sha256sum verification failed!")
+    elif mode == "git":
+        from .git import repository, verify, ErrorMessage  # pylint: disable=C0415
+
+        try:
+            repo_dir, repo = repository(args.chdir)
+        except:
+            bail(
+                "Signature pertains to git commit, but current working directory isn't a git repository"
+            )
+        revision = args.git_revision if args.git_revision else "HEAD"
+        print_tsv("Local git repository:", repo_dir)
+        print_tsv("  Local git revision:", revision)
+        try:
+            msg, warnings = verify(repo, revision, body)
+        except ErrorMessage as err:
+            bail(err.args[0])
+        for warnmsg in warnings:
+            print(yellow("[WARN] " + warnmsg))
+        print()
+        print(msg)
     else:
         bail(
-            "Signing mode not one of {sha256sum}. A newer version of this utility might support the necessary mode."
+            "Signing mode not one of {sha256sum, git}; a newer version of this utility might support the necessary mode."
         )
 
     print_tsv("\n" + color("🗹", ANSI.BHGRN), "Success")

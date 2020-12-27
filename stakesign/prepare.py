@@ -22,54 +22,14 @@ def prepare_sha256sum(files, sha256sum_exe, cwd=None, tee=False):
             break
         sha256sum_stdout.append(line)  # includes newline
         if tee:
-            sys.stdout.flush()
             sys.stdout.buffer.write(line)
+            sys.stdout.buffer.flush()
     proc.wait()
     sys.stdout.flush()
     if proc.returncode != 0:
         raise Exception("sha256sum failed")
 
     return b"".join(sha256sum_stdout)
-
-
-def prepare_git(objects, cwd=None):
-    from pygit2 import Repository, Commit, Reference, Tag  # pylint: disable=E0611,C0415
-    from pathlib import Path  # pylint: disable=C0415
-
-    # find containing git repo
-    cwd = Path(cwd) if cwd else Path.cwd()
-    while not (cwd / ".git").is_dir():
-        cwd = (cwd / "..").resolve()
-        assert cwd != Path(cwd.anchor), "Not in git repository"
-    repo = Repository(cwd / ".git")
-
-    results = []
-    all_sha256 = True
-    for obj_id in objects:
-        try:
-            obj, ref = repo.revparse_ext(obj_id)
-        except KeyError:
-            assert False, "Failed to git rev-parse " + obj_id
-        assert isinstance(obj, (Commit, Tag))
-        assert not ref or isinstance(ref, Reference), "expected Reference, not " + str(ref)
-        result = {}
-        if isinstance(obj, Commit):
-            result["commit"] = obj.hex
-            all_sha256 = all_sha256 and len(obj.hex) == 64
-            if ref and ref.name.startswith("refs/tags/"):  # lightweight tag
-                result["tag"] = ref.name[10:]
-        elif isinstance(obj, Tag):  # annotated tag
-            result["commit"] = obj.target.hex
-            result["tag"] = obj.name
-            result["tagObject"] = obj.hex
-            all_sha256 = all_sha256 and len(obj.target.hex) == 64 and len(obj.hex) == 64
-        else:
-            assert False, "expected Commit/Tag, not " + str(obj)
-        results.append(result)
-
-    return (
-        "\n".join(json.dumps(res, separators=(",", ":")) for res in results).encode() + b"\n"
-    ), all_sha256
 
 
 def cli_subparser(subparsers):
@@ -136,19 +96,21 @@ def cli(args):  # pylint: disable=R0912
     header = json.dumps(header, separators=(",", ":")) + "\n"
 
     if args.git:
+        from .git import repository, prepare, ErrorMessage  # pylint: disable=C0415
+
         try:
-            body, all_sha256 = prepare_git(args.FILE, cwd=args.chdir)
-        except AssertionError as err:
+            body, all_sha256 = prepare(repository(args.chdir)[1], args.FILE)
+        except ErrorMessage as err:
             bail(err.args[0])
         if not all_sha256:
             print(
                 yellow(
-                    "[WARN] Preparing to sign git SHA-1 digests; review git SHA-1 security risks and consider `git init --object-format=sha256`"
+                    "[WARN] Preparing to sign git SHA-1 digests; review git SHA-1 security risks and consider git SHA-256 mode"
                 )
             )
-        sys.stdout.write(header)  # for payload preview
-        sys.stdout.buffer.write(body)
         sys.stdout.flush()
+        sys.stdout.buffer.write(header.encode())  # for payload preview
+        sys.stdout.buffer.write(body)
     else:  # default sha256sum mode
         sha256sum_exe = shutil.which("sha256sum")
         if not sha256sum_exe:

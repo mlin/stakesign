@@ -82,7 +82,7 @@ git tag some-lightweight-tag
 git tag -a -m 'stakesign test' some-annotated-tag
 
 commit_prefix=$(echo `git rev-parse HEAD` | cut -c1-10)
-$stakesign prepare --git HEAD "$commit_prefix" some-lightweight-tag some-annotated-tag | tee stdout.log
+$stakesign prepare --git --stake 0.66 HEAD "$commit_prefix" some-lightweight-tag some-annotated-tag | tee stdout.log
 is "$?" "0" "succeed git refs"
 grep --silent "$(git rev-parse HEAD)" stdout.log && grep --silent '"tag":"some-lightweight-tag"' stdout.log && grep --silent '"tag":"some-annotated-tag","tagObject":"' stdout.log
 is "$?" "0" "resolve git refs"

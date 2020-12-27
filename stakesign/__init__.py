@@ -28,6 +28,15 @@ def main():
     else:
         del os.environ["COLUMNS"]
 
+    try:
+        print(
+            f"[NOTICE] stakesign v{importlib_metadata.version('stakesign')} is experimental; do not trust in high-risk scenarios"
+        )
+    except importlib_metadata.PackageNotFoundError:
+        print(
+            "[NOTICE] stakesign (version unknown) is experimental; do not trust in high-risk scenarios"
+        )
+
     if args.command == "verify":
         verify.cli(args)
     elif args.command == "prepare":
