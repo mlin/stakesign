@@ -1,6 +1,7 @@
 import sys
 import json
 import argparse
+import platform
 import subprocess
 import shutil
 from datetime import datetime, timedelta
@@ -110,9 +111,10 @@ def cli(args):  # pylint: disable=R0912
     else:  # default sha256sum mode
         sha256sum_exe = shutil.which("sha256sum")
         if not sha256sum_exe:
-            bail(
-                "`sha256sum` utility unavailable; ensure coreutils is installed and PATH is configured"
-            )
+            msg = "`sha256sum` utility unavailable; ensure coreutils is installed and PATH is configured"
+            if platform.system() == "Darwin":
+                msg += "\nOn macOS try: brew install coreutils"
+            bail(msg)
         print_tsv("Trusting local exe:", sha256sum_exe)
         print()
 
