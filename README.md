@@ -94,9 +94,7 @@ $ stakesign prepare --stake 0.42 --git R [R2 ...]
 
 Where R is `HEAD` to sign the current working tree, or a commit digest, tag, or anything else understood by `git rev-parse`. You can cover multiple commits and tags in one signature.
 
-<small>
 The signatures apply to git commit digests. If your repository doesn't use [git's new SHA-256 object format](https://github.blog/2020-10-19-git-2-29-released/), the tool accepts older SHA-1 digests with warnings during signing and verification. [Practical risks from SHA-1](https://git-scm.com/docs/hash-function-transition/) are small, as git now (since mid-2017) includes mitigations for known vulnerabilities; therefore, we've kept the signature approach simple knowing SHA-256 mode is on the way.
-</small>
 
 ### Signing Docker images
 
