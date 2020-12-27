@@ -21,12 +21,21 @@ def main():
     prepare.cli_subparser(subparsers)
 
     replace_COLUMNS = os.environ.get("COLUMNS", None)
-    os.environ["COLUMNS"] = "100"  # make help descriptions wider
+    os.environ["COLUMNS"] = "120"  # make help descriptions wider
     args = parser.parse_args(sys.argv[1:])
     if replace_COLUMNS is not None:
         os.environ["COLUMNS"] = replace_COLUMNS
     else:
         del os.environ["COLUMNS"]
+
+    stakesign_version = "(version unknown)"
+    try:
+        stakesign_version = "v" + importlib_metadata.version("stakesign")
+    except importlib_metadata.PackageNotFoundError:
+        pass
+    print(
+        f"[NOTICE] stakesign {stakesign_version} is experimental; do not trust in high-risk environments"
+    )
 
     if args.command == "verify":
         verify.cli(args)
@@ -38,7 +47,7 @@ def main():
 
 class PipVersionAction(Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        from web3.auto import w3
+        from web3.auto import w3  # pylint: disable=C0415
 
         print(f"web3 v{w3.api}")
         try:

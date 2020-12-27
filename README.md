@@ -19,10 +19,9 @@ Ethereum transaction [0xd071c0e8fbcbcab8b92f9098c5250d7e1c003f222c94fe0729669bae
 This is nothing more than [GNU sha256sum](https://www.gnu.org/software/coreutils/manual/html_node/sha2-utilities.html)'s output appended to a one-line JSON header. The header advises the recipient to reject the signature if the [ETH balance of the signing key](https://etherscan.io/address/0x83cee747e4bcff80938ea1056f925d1c24412f0b) is below 0.42. To verify this signature at the command line,
 
 ```
-# whichever you prefer:
 $ pip3 install stakesign
-$ conda install -c conda-forge stakesign
 # on macOS, also: brew install coreutils
+# coming soon: conda install -c conda-forge stakesign
 
 # then download LICENSE and verify it:
 $ wget https://github.com/mlin/stakesign/raw/main/LICENSE
@@ -76,10 +75,7 @@ See [doc/Signing-MEW.md](doc/Signing-MEW.md) for a walkthrough using [MyEtherWal
 
 Once your signature is published on the blockchain, attach the signature transaction ID to your products and point your users to here for `stakesign verify` or the manual procedure. (Hey, we've got to start somewhere...)
 
-### Signing git commits & tags
-
-### Signing Docker images
-
+### Signing git revisions & Docker images
 ### Off-chain signatures
 
 *To be written*

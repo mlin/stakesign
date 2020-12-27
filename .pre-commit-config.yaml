@@ -21,4 +21,4 @@ repos:
     files: \.py$
     verbose: true
     entry: pylint
-    args: [-d, "no-member,invalid-name,bad-continuation,global-statement,missing-docstring,missing-module-docstring,line-too-long,duplicate-code,bare-except,broad-except,import-outside-toplevel,too-few-public-methods"]
+    args: [-d, "no-member,invalid-name,bad-continuation,missing-docstring,missing-module-docstring,line-too-long,duplicate-code,bare-except,broad-except,too-few-public-methods,too-many-arguments"]

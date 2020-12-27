@@ -21,7 +21,10 @@ def get_sig(w3, txid):
     "Query blockchain for signature transaction details"
     tx = w3.eth.getTransaction(txid)
     txr = w3.eth.getTransactionReceipt(txid)
-    blk = w3.eth.getBlock(tx.blockNumber)
+    block_num = tx.blockNumber
+    if not block_num:
+        raise web3.exceptions.TransactionNotFound("transaction pending (no block number yet)")
+    blk = w3.eth.getBlock(block_num)
 
     signer = txr["from"]
     assert tx["from"] == signer
@@ -114,7 +117,7 @@ def check_sig_stake(w3, sig, header, stake_floor_wei, ignore_ad=False):
     )
 
 
-def verify_sha256sum(header, body, exe, ignore_missing=False, no_strict=False):
+def verify_sha256sum(header, body, exe, ignore_missing=False, no_strict=False, cwd=None):
     "run given sha256sum executable to verify signature body"
     assert header["stakesign"] == "sha256sum"
     assert isinstance(body, bytes)
@@ -129,7 +132,7 @@ def verify_sha256sum(header, body, exe, ignore_missing=False, no_strict=False):
         tmp.write(body)
         tmp.flush()
         cmd.append(tmp.name)
-        res = subprocess.run(cmd, check=False)
+        res = subprocess.run(cmd, check=False, cwd=cwd)
 
     return res.returncode == 0
 
@@ -138,6 +141,7 @@ def cli_subparser(subparsers):
     parser = subparsers.add_parser(
         "verify",
         help="verify existing signature(s)",
+        description="The transaction is, by default, expected to sign file(s) in the current working directory.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("signature", help="signature Transaction ID (0x...)")
@@ -170,29 +174,40 @@ def cli_subparser(subparsers):
         help="proceed even if signature's stated expiration date has passed",
     )
     parser.add_argument(
+        "--git-revision",
+        metavar="HEAD",
+        help="if signature pertains to git, verify this local revision instead of current checkout HEAD",
+    )
+    parser.add_argument(
+        "--chdir", "-C", metavar="DIR", type=str, help="change working directory to DIR"
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
-        help="display transaction input UTF-8 payload after success",
+        help="display transaction input payload after success (caution: prints data from blockchain to terminal)",
     )
     return parser
 
 
-def cli(args):  # pylint: disable=R0912
+def cli(args):  # pylint: disable=R0912,R0914,R0915
     provider_msg = "(from environment WEB3_PROVIDER_URI)"
     if "WEB3_PROVIDER_URI" not in os.environ:
         os.environ["WEB3_PROVIDER_URI"] = "https://cloudflare-eth.com"
         provider_msg = "(to override, set environment WEB3_PROVIDER_URI)"
 
     print("\t".join(("Trusting ETH gateway:", os.environ["WEB3_PROVIDER_URI"], provider_msg)))
-    from web3.auto import w3
+    from web3.auto import w3  # pylint: disable=C0415
 
     # get transaction info
     if not args.signature.startswith("0x"):
         bail("Transaction ID should start with 0x")
     try:
         sig = get_sig(w3, args.signature)
-    except web3.exceptions.TransactionNotFound:
-        bail("Transaction and/or receipt not found on Ethereum network")
+    except web3.exceptions.TransactionNotFound as err:
+        bail(
+            "Transaction not found on Ethereum network; check transaction ID, or try later or through another gateway: "
+            + str(err)
+        )
 
     utcnow = datetime.utcnow().replace(tzinfo=None)
     sig_age = utcnow - sig.timestamp
@@ -201,7 +216,7 @@ def cli(args):  # pylint: disable=R0912
     print_tsv(
         " Signature timestamp:",
         f"{sig.timestamp}Z",
-        yellow_if(f"({sig_age} ago)", sig_age < timedelta(days=3)),
+        yellow(f"({sig_age} ago)", sig_age < timedelta(days=3)),
     )
 
     # decode signature, check expiration date
@@ -237,6 +252,7 @@ def cli(args):  # pylint: disable=R0912
         bail(msg)
 
     # verify, per mode
+    warnings = []
     mode = header["stakesign"]
     if mode == "sha256sum":
         sha256sum_exe = shutil.which("sha256sum")
@@ -252,23 +268,47 @@ def cli(args):  # pylint: disable=R0912
             sha256sum_exe,
             ignore_missing=args.ignore_missing,
             no_strict=args.no_strict,
+            cwd=args.chdir,
         ):
             bail("sha256sum verification failed!")
+    elif mode == "git":
+        from .git import repository, verify, ErrorMessage  # pylint: disable=C0415
+
+        try:
+            repo_dir, repo = repository(args.chdir)
+        except:
+            bail(
+                "Signature pertains to git commit, but current working directory isn't a git repository"
+            )
+        revision = args.git_revision if args.git_revision else "HEAD"
+        print_tsv("Local git repository:", repo_dir)
+        print_tsv("  Local git revision:", revision)
+        try:
+            msg, warnings = verify(repo, revision, body)
+        except ErrorMessage as err:
+            bail(err.args[0])
+        print()
+        print(msg)
+        print()
     else:
         bail(
-            "Signing mode not one of {sha256sum}. A newer version of this utility might support the necessary mode."
+            "Signing mode not one of {sha256sum, git}; a newer version of this utility might support the necessary mode."
         )
 
-    print_tsv("\n" + color("🗹", ANSI.BHGRN), "Success")
-
+    for warnmsg in warnings:
+        print(yellow("[WARN] " + warnmsg))
     if math.fabs(args.stake_floor_eth - DEFAULT_STAKE_FLOOR_ETH) < (DEFAULT_STAKE_FLOOR_ETH / 1000):
         print(
-            color(
+            yellow(
                 f"[WARN] Ensure the signer's current {w3.fromWei(vs.signer_wei, 'ether')} ETH stake evinces their ongoing interest in securing it.\n"
-                + f"       Consider setting --stake above the default {DEFAULT_STAKE_FLOOR_ETH} ETH depending on the publisher.",
-                ANSI.BHYEL,
+                + f"       (Set --stake above the default {DEFAULT_STAKE_FLOOR_ETH} ETH minimum to clear this warning.)",
             )
         )
+        warnings = True
+    print_tsv(
+        color("🗹", ANSI.BHGRN),
+        color("Success (with warnings)" if warnings else "Success", ANSI.BOLD),
+    )
 
     if args.verbose:
         print()
@@ -294,8 +334,8 @@ def color(msg, col):
     return msg
 
 
-def yellow_if(msg, cond):
-    return color(msg, ANSI.BHYEL) if cond else msg
+def yellow(msg, only_if=True):
+    return color(msg, ANSI.BHYEL) if only_if else msg
 
 
 class ANSI:
@@ -305,3 +345,4 @@ class ANSI:
     BHRED = "\x1b[1;91m"
     BHYEL = "\x1b[1;93m"
     BHGRN = "\x1b[1;92m"
+    BOLD = "\x1b[1m"
