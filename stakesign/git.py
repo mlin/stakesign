@@ -23,6 +23,7 @@ def repository(cwd=None):
 
 def prepare(repo, revisions):
     results = []
+    warnings = []
     all_sha256 = True
     for revision in revisions:
         try:
@@ -46,9 +47,21 @@ def prepare(repo, revisions):
             assert False
         results.append(result)
 
+    head_commit = repo.revparse_ext("HEAD")[0].hex
+    if head_commit not in (res["commit"] for res in results):
+        warnings.append(
+            f"The revisions to sign don't include the current working tree HEAD = {head_commit}"
+        )
+    else:
+        error_if(repo.status(), f"Dirty working tree for HEAD = {head_commit}")
+
+    if not all_sha256:
+        warnings.append(
+            "Preparing signature for git SHA-1 digest; review git SHA-1 security risks and consider adopting git SHA-256 mode"
+        )
     return (
         "\n".join(json.dumps(res, separators=(",", ":")) for res in results).encode() + b"\n"
-    ), all_sha256
+    ), warnings
 
 
 def verify(repo, revision, sigbody):  # pylint: disable=R0912,R0915
@@ -57,7 +70,7 @@ def verify(repo, revision, sigbody):  # pylint: disable=R0912,R0915
     """
     # resolve revision to commit hash
     try:
-        obj_to_verify = repo[revision]
+        obj_to_verify, _ = repo.revparse_ext(revision)
     except KeyError:
         error_if(True, f"Failed to `git rev-parse {revision}`")
     if isinstance(obj_to_verify, Commit):
@@ -69,12 +82,15 @@ def verify(repo, revision, sigbody):  # pylint: disable=R0912,R0915
 
     # check status of current checkout
     warnings = set()
-    if repo["HEAD"].hex != commit_to_verify:
+    head_commit = repo.revparse_ext("HEAD")[0].hex
+    if head_commit != commit_to_verify:
         warnings.add(
-            f"Specified revision to verify {revision} = {commit_to_verify} differs from current checkout HEAD = {repo['HEAD'].hex}"
+            f"Verified revision{revision} = {commit_to_verify} is not the working tree HEAD = {head_commit}"
         )
     elif repo.status():
-        warnings.add("Current checkout is dirty; signature applies to clean commit")
+        warnings.add(
+            "Working tree is dirty; signature applies to clean commit HEAD = " + head_commit
+        )
 
     verified = None
     all_sha256 = len(commit_to_verify) == 64
@@ -83,6 +99,8 @@ def verify(repo, revision, sigbody):  # pylint: disable=R0912,R0915
     # Warning about warning messages: sigbody comes off the blockchain, so we shouldn't include
     # anything from it in warning messages without validation (in case it is malicious)
     for line in sigbody.split(b"\n"):  # pylint: disable=R1702
+        if not line:
+            continue
         try:
             sig_elt = json.loads(line.decode())
             assert "commit" in sig_elt

@@ -28,14 +28,14 @@ def main():
     else:
         del os.environ["COLUMNS"]
 
+    stakesign_version = "(version unknown)"
     try:
-        print(
-            f"[NOTICE] stakesign v{importlib_metadata.version('stakesign')} is experimental; do not trust in high-risk scenarios"
-        )
+        stakesign_version = "v" + importlib_metadata.version("stakesign")
     except importlib_metadata.PackageNotFoundError:
-        print(
-            "[NOTICE] stakesign (version unknown) is experimental; do not trust in high-risk scenarios"
-        )
+        pass
+    print(
+        f"[NOTICE] stakesign {stakesign_version} is experimental; do not trust in high-risk settings"
+    )
 
     if args.command == "verify":
         verify.cli(args)

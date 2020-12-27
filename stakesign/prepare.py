@@ -8,7 +8,7 @@ import dateutil
 import dateutil.parser
 import dateutil.tz
 import web3
-from .verify import print_tsv, bail, yellow
+from .verify import print_tsv, bail, yellow, color, ANSI
 
 
 def prepare_sha256sum(files, sha256sum_exe, cwd=None, tee=False):
@@ -99,15 +99,11 @@ def cli(args):  # pylint: disable=R0912
         from .git import repository, prepare, ErrorMessage  # pylint: disable=C0415
 
         try:
-            body, all_sha256 = prepare(repository(args.chdir)[1], args.FILE)
+            body, warnings = prepare(repository(args.chdir)[1], args.FILE)
         except ErrorMessage as err:
             bail(err.args[0])
-        if not all_sha256:
-            print(
-                yellow(
-                    "[WARN] Preparing to sign git SHA-1 digests; review git SHA-1 security risks and consider git SHA-256 mode"
-                )
-            )
+        for warnmsg in warnings:
+            print(yellow("[WARN] " + warnmsg))
         sys.stdout.flush()
         sys.stdout.buffer.write(header.encode())  # for payload preview
         sys.stdout.buffer.write(body)
@@ -128,5 +124,5 @@ def cli(args):  # pylint: disable=R0912
 
     print("\n-- Transaction input data for signing (one long line):\n")
 
-    print(web3.Web3.toHex(header.encode() + body))
+    print(color(web3.Web3.toHex(header.encode() + body), ANSI.BOLD))
     print()

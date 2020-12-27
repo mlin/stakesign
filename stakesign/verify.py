@@ -21,7 +21,12 @@ def get_sig(w3, txid):
     "Query blockchain for signature transaction details"
     tx = w3.eth.getTransaction(txid)
     txr = w3.eth.getTransactionReceipt(txid)
-    blk = w3.eth.getBlock(tx.blockNumber)
+    block_num = tx.blockNumber
+    if not block_num:
+        raise web3.exceptions.TransactionNotFound(
+            "transaction has no block number yet (wait awhile and retry)"
+        )
+    blk = w3.eth.getBlock(block_num)
 
     signer = txr["from"]
     assert tx["from"] == signer
@@ -181,7 +186,7 @@ def cli_subparser(subparsers):
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="display transaction input UTF-8 payload after success",
+        help="display transaction input payload after success (caution: prints data from blockchain to terminal)",
     )
     return parser
 
@@ -200,8 +205,8 @@ def cli(args):  # pylint: disable=R0912,R0914,R0915
         bail("Transaction ID should start with 0x")
     try:
         sig = get_sig(w3, args.signature)
-    except web3.exceptions.TransactionNotFound:
-        bail("Transaction and/or receipt not found on Ethereum network")
+    except web3.exceptions.TransactionNotFound as err:
+        bail("Transaction and/or receipt not found on Ethereum network: " + str(err))
 
     utcnow = datetime.utcnow().replace(tzinfo=None)
     sig_age = utcnow - sig.timestamp
@@ -246,6 +251,7 @@ def cli(args):  # pylint: disable=R0912,R0914,R0915
         bail(msg)
 
     # verify, per mode
+    warnings = []
     mode = header["stakesign"]
     if mode == "sha256sum":
         sha256sum_exe = shutil.which("sha256sum")
@@ -280,25 +286,28 @@ def cli(args):  # pylint: disable=R0912,R0914,R0915
             msg, warnings = verify(repo, revision, body)
         except ErrorMessage as err:
             bail(err.args[0])
-        for warnmsg in warnings:
-            print(yellow("[WARN] " + warnmsg))
         print()
         print(msg)
+        print()
     else:
         bail(
             "Signing mode not one of {sha256sum, git}; a newer version of this utility might support the necessary mode."
         )
 
-    print_tsv("\n" + color("🗹", ANSI.BHGRN), "Success")
-
+    for warnmsg in warnings:
+        print(yellow("[WARN] " + warnmsg))
     if math.fabs(args.stake_floor_eth - DEFAULT_STAKE_FLOOR_ETH) < (DEFAULT_STAKE_FLOOR_ETH / 1000):
         print(
-            color(
+            yellow(
                 f"[WARN] Ensure the signer's current {w3.fromWei(vs.signer_wei, 'ether')} ETH stake evinces their ongoing interest in securing it.\n"
-                + f"       Consider setting --stake above the default {DEFAULT_STAKE_FLOOR_ETH} ETH depending on the publisher.",
-                ANSI.BHYEL,
+                + f"       Consider setting --stake above the default {DEFAULT_STAKE_FLOOR_ETH} ETH to an appropriate amount for the publisher.",
             )
         )
+        warnings = True
+    print_tsv(
+        color("🗹", ANSI.BHGRN),
+        color("Success (with warnings)" if warnings else "Success", ANSI.BOLD),
+    )
 
     if args.verbose:
         print()
@@ -335,3 +344,4 @@ class ANSI:
     BHRED = "\x1b[1;91m"
     BHYEL = "\x1b[1;93m"
     BHGRN = "\x1b[1;92m"
+    BOLD = "\x1b[1m"
