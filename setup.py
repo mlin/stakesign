@@ -20,4 +20,11 @@ setup(
     packages=find_packages(),
     entry_points={"console_scripts": ["stakesign = stakesign:main"]},
     python_requires=">=3.6",
+    install_requires=[
+        "importlib-metadata~=1.0",
+        "python-dateutil~=2.0",
+        "web3~=5.0",
+        "pygit2~=1.0",
+        "docker~=4.0",
+    ],
 )
