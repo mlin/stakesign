@@ -2,9 +2,9 @@
 
 ### Sign files via blockchain + put your money where your mouth is
 
-This project helps open-source developers, and other DIY-types, who'd like to attach user-verifiable digital signatures to their work products (files, code, executables, Docker images, etc.). It provides a way to **sign with your cryptocurrency wallet**, instead of a separate GnuPG keypair or X.509 certificate.
+This project helps open-source developers, and other DIY-types, who'd like to affix user-verifiable **digital signatures on files, code, and container images**. It provides a way to **sign with a cryptocurrency wallet**, instead of a separate GnuPG keypair or X.509 certificate.
 
-It furthermore proposes that **signatures remain valid only while the signing address holds a *stake* of unspent cryptocurrency**. The stake bonds the publisher to keep their signing key safe & secure, even if they lose interest in the signed products; or otherwise, allows for its revocation with immediate, global effect. These properties aren't as easily achieved by other P2P signing mechanisms.
+It furthermore defines that **signatures remain valid only while the signing address holds a *stake* of unspent cryptocurrency**. The stake bonds the publisher to keep their signing key safe & secure, even if they lose interest in the signed products; or otherwise, allows for its revocation with immediate, global effect. These properties aren't as easily achieved by other P2P signing mechanisms.
 
 **Signatures are broadcast in public blockchain transactions,** providing an irrefutably timestamped audit trail, and a succinct delivery mechanism (transaction ID). Alternatively, one can communicate a signature off-chain and refer to the public ledger just to confirm the stake (foregoing the intrinsic audit trail).
 
@@ -71,11 +71,23 @@ Trusting local exe:	/usr/bin/sha256sum
 
 ```
 
-See [doc/Signing-MEW.md](doc/Signing-MEW.md) for a walkthrough using [MyEtherWallet](https://www.myetherwallet.com/) to complete the process. Other wallets that let you paste the transaction input hex string (aka "contract data") should work too. (Offloading this for now has allowed our prototype code to avoid handling any real cryptography.)
+See [doc/Signing-MEW.md](doc/Signing-MEW.md) for a walkthrough using [MyEtherWallet](https://www.myetherwallet.com/) to complete the process. Other wallets that let you paste the transaction input hex string (aka "contract data") should work too. We'll make this process smoother in the future; offloading it for now allowed our prototype code to avoid handling any real cryptography.
 
 Once your signature is published on the blockchain, attach the signature transaction ID to your products and point your users to here for `stakesign verify` or the manual procedure. (Hey, we've got to start somewhere...)
 
 ### Signing git revisions & Docker images
+
+Beyond files, `stakesign` has helper modes for signing git commits & tags and Docker images. Verification examples:
+
+```
+$ git clone --branch v1.1.0 https://github.com/mlin/spVCF.git && cd spVCF
+$ stakesign verify 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483
+$ docker pull quay.io/mlin/glnexus:v1.2.5 && docker pull quay.io/mlin/glnexus:v1.2.6
+$ stakesign verify 0xd071c0e8fbcbcab8b92f9098c5250d7e1c003f222c94fe0729669bae02ae3acf
+```
+
+* *See [doc/git_docker.md](doc/git_docker.md) for full detais*
+
 ### Off-chain signatures
 
 *To be written*

@@ -1,6 +1,7 @@
 import sys
 import json
 import argparse
+import platform
 import subprocess
 import shutil
 from datetime import datetime, timedelta
@@ -45,6 +46,11 @@ def cli_subparser(subparsers):
         help="identifiers are git commits or tags in the current repository",
     )
     parser.add_argument(
+        "--docker",
+        action="store_true",
+        help="identifiers pertain to docker images from the local dockerd",
+    )
+    parser.add_argument(
         "--stake",
         metavar="0.1",
         dest="stake_ad",
@@ -68,13 +74,15 @@ def cli_subparser(subparsers):
     return parser
 
 
-def cli(args):  # pylint: disable=R0912
+def cli(args):  # pylint: disable=R0912,R0915
     if args.expire and args.expire_days:
-        bail("set one of --expire-days and --expire")
+        bail("set at most one of --expire-days and --expire")
+    if args.docker and args.git:
+        bail("set at most one of --git and --docker")
     if args.stake_ad is None:
         print(
             yellow(
-                "[WARN] Are you sure you don't want to set the advisory --stake? The signature's validity will be totally up to each verifier's defaults.",
+                "[WARN] Are you sure you don't want to set the advisory --stake? This will leave it to verifiers to apply a default threshold.",
             )
         )
 
@@ -89,6 +97,8 @@ def cli(args):  # pylint: disable=R0912
     header = {"stakesign": "sha256sum"}
     if args.git:
         header["stakesign"] = "git"
+    if args.docker:
+        header["stakesign"] = "docker"
     if isinstance(expire_utc, datetime):
         header["expire"] = f"{expire_utc}Z"
     if isinstance(args.stake_ad, float):
@@ -98,8 +108,24 @@ def cli(args):  # pylint: disable=R0912
     if args.git:
         from .git import repository, prepare, ErrorMessage  # pylint: disable=C0415
 
+        repo_dir, repo = repository(args.chdir)
+        print_tsv("Trusting git repo:", repo_dir)
+
         try:
-            body, warnings = prepare(repository(args.chdir)[1], args.FILE)
+            body, warnings = prepare(repo, args.FILE)
+        except ErrorMessage as err:
+            bail(err.args[0])
+        for warnmsg in warnings:
+            print(yellow("[WARN] " + warnmsg))
+        sys.stdout.flush()
+        sys.stdout.buffer.write(header.encode())  # for payload preview
+        sys.stdout.buffer.write(body)
+    elif args.docker:
+        from .docker import DEFAULT_HOST, prepare, ErrorMessage  # pylint: disable=C0415
+
+        print_tsv("Trusting dockerd:", DEFAULT_HOST)
+        try:
+            body, warnings = prepare(DEFAULT_HOST, args.FILE)
         except ErrorMessage as err:
             bail(err.args[0])
         for warnmsg in warnings:
@@ -110,9 +136,10 @@ def cli(args):  # pylint: disable=R0912
     else:  # default sha256sum mode
         sha256sum_exe = shutil.which("sha256sum")
         if not sha256sum_exe:
-            bail(
-                "`sha256sum` utility unavailable; ensure coreutils is installed and PATH is configured"
-            )
+            msg = "`sha256sum` utility unavailable; ensure coreutils is installed and PATH is configured"
+            if platform.system() == "Darwin":
+                msg += "\nOn macOS try: brew install coreutils"
+            bail(msg)
         print_tsv("Trusting local exe:", sha256sum_exe)
         print()
 
