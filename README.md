@@ -2,9 +2,9 @@
 
 ### Sign files via blockchain + put your money where your mouth is
 
-This project helps open-source developers, and other DIY-types, who'd like to attach user-verifiable digital signatures to their work products (files, code, executables, Docker images, etc.). It provides a way to **sign with your cryptocurrency wallet**, instead of a separate GnuPG keypair or X.509 certificate.
+This project helps open-source developers, and other DIY-types, who'd like to affix user-verifiable **digital signatures on files, code, annd Docker images**. It provides a way to **sign with a cryptocurrency wallet**, instead of a separate GnuPG keypair or X.509 certificate.
 
-It furthermore proposes that **signatures remain valid only while the signing address holds a *stake* of unspent cryptocurrency**. The stake bonds the publisher to keep their signing key safe & secure, even if they lose interest in the signed products; or otherwise, allows for its revocation with immediate, global effect. These properties aren't as easily achieved by other P2P signing mechanisms.
+It furthermore defines that **signatures remain valid only while the signing address holds a *stake* of unspent cryptocurrency**. The stake bonds the publisher to keep their signing key safe & secure, even if they lose interest in the signed products; or otherwise, allows for its revocation with immediate, global effect. These properties aren't as easily achieved by other P2P signing mechanisms.
 
 **Signatures are broadcast in public blockchain transactions,** providing an irrefutably timestamped audit trail, and a succinct delivery mechanism (transaction ID). Alternatively, one can communicate a signature off-chain and refer to the public ledger just to confirm the stake (foregoing the intrinsic audit trail).
 
@@ -77,7 +77,7 @@ Once your signature is published on the blockchain, attach the signature transac
 
 ### Signing git revisions & Docker images
 
-Beyond files, the tool has helper modes for signing git commits & tags and Docker images. Verification examples:
+Beyond files, `stakesign` has helper modes for signing git commits & tags and Docker images. Verification examples:
 
 ```
 $ git clone --branch v1.1.0 https://github.com/mlin/spVCF.git && cd spVCF
