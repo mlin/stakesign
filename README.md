@@ -86,7 +86,7 @@ $ docker pull quay.io/mlin/glnexus:v1.2.5 && docker pull quay.io/mlin/glnexus:v1
 $ stakesign verify 0xd071c0e8fbcbcab8b92f9098c5250d7e1c003f222c94fe0729669bae02ae3acf
 ```
 
-**See [docs/git_docker.md](docs/git_docker.md) for full detais**
+* *See [doc/git_docker.md](docs/git_docker.md) for full detais*
 
 ### Off-chain signatures
 
