@@ -77,7 +77,7 @@ Once your signature is published on the blockchain, attach the signature transac
 
 ### Signing git revisions & Docker images
 
-The tool has dedicated modes for signing git commits & tags and Docker images. Verification examples:
+Beyond files, the tool has helper modes for signing git commits & tags and Docker images. Verification examples:
 
 ```
 $ git clone --branch v1.1.0 https://github.com/mlin/spVCF.git && cd spVCF
