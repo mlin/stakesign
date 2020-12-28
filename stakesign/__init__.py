@@ -34,7 +34,7 @@ def main():
     except importlib_metadata.PackageNotFoundError:
         pass
     print(
-        f"[NOTICE] stakesign {stakesign_version} is experimental; do not trust in high-risk environments"
+        f"[NOTICE] stakesign {stakesign_version} is a prototype; don't trust in high-risk environments"
     )
 
     if args.command == "verify":

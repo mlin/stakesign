@@ -105,13 +105,15 @@ def verify(repo, revision, sigbody):  # pylint: disable=R0912,R0915
             continue
         try:
             sig_elt = json.loads(line.decode())
-            assert "commit" in sig_elt
+            assert isinstance(sig_elt.get("commit"), str)
         except:
             error_if(True, "Invalid signature syntax")
         if sig_elt["commit"] == commit_to_verify:
             if verified is None:
                 verified = f"Verified: local revision {revision} = signed commit {commit_to_verify}"
             if "tag" in sig_elt:
+                assert isinstance(sig_elt["tag"], str)
+                assert "tagObject" not in sig_elt or isinstance(sig_elt["tagObject"], str)
                 local_tag = None
                 try:
                     local_tag = repo.revparse_ext(sig_elt["tag"])

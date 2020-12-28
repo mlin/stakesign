@@ -109,7 +109,7 @@ $stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0
 is "$?" "1" "reject local tag referring to wrong commit"
 grep --silent "refers to a different commit" stderr.log
 is "$?" "0" "reject local tag for correct reason"
-$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483 --git-revision v1.0.0 | tee stdout.log
+$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483 --git v1.0.0 | tee stdout.log
 is "$?" "0" "verify annotated tag"
 grep --silent 8851a121e5198d74eba19387628711d305d54e33 stdout.log
 is "$?" "0" "verify annotated tag 2"

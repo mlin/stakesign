@@ -161,7 +161,7 @@ def cli_subparser(subparsers):
     parser.add_argument(
         "--ignore-missing",
         action="store_true",
-        help="pass --ignore-missing to sha256sum, if applicable",
+        help="if signature covers multiple files/objects, only require at least one to be present",
     )
     parser.add_argument(
         "--no-strict",
@@ -174,9 +174,19 @@ def cli_subparser(subparsers):
         help="proceed even if signature's stated expiration date has passed",
     )
     parser.add_argument(
-        "--git-revision",
+        "--git",
+        dest="git_revision",
         metavar="HEAD",
-        help="if signature pertains to git, verify this local revision instead of current checkout HEAD",
+        help="expect signature of git commits/tags & specify the local revision to verify (default HEAD)",
+    )
+    parser.add_argument(
+        "--docker",
+        dest="docker_handle",
+        metavar="TAG",
+        help="expect signature of docker image(s) and specify the local image tag/digest/ID to verify",
+    )
+    parser.add_argument(
+        "--file", dest="files_only", action="store_true", help="expect signature of file(s)"
     )
     parser.add_argument(
         "--chdir", "-C", metavar="DIR", type=str, help="change working directory to DIR"
@@ -255,6 +265,10 @@ def cli(args):  # pylint: disable=R0912,R0914,R0915
     warnings = []
     mode = header["stakesign"]
     if mode == "sha256sum":
+        if args.git_revision:
+            bail("Signature applies to files, not git")
+        if args.docker_handle:
+            bail("Signature applies to files, not docker")
         sha256sum_exe = shutil.which("sha256sum")
         if not sha256sum_exe:
             bail(
@@ -272,6 +286,10 @@ def cli(args):  # pylint: disable=R0912,R0914,R0915
         ):
             bail("sha256sum verification failed!")
     elif mode == "git":
+        if args.files_only:
+            bail("Signature applies to git, not files")
+        if args.docker_handle:
+            bail("Signature applies to git, not docker")
         from .git import repository, verify, ErrorMessage  # pylint: disable=C0415
 
         try:
@@ -290,9 +308,27 @@ def cli(args):  # pylint: disable=R0912,R0914,R0915
         print()
         print(msg)
         print()
+    elif mode == "docker":
+        if args.files_only:
+            bail("Signature applies to docker, not files")
+        if args.git_revision:
+            bail("Signature applies to docker, not git")
+        from .docker import DEFAULT_HOST, verify, ErrorMessage  # pylint: disable=C0415
+
+        print_tsv("    Trusting dockerd:", DEFAULT_HOST)
+        try:
+            verifications, warnings = verify(
+                DEFAULT_HOST, body, args.docker_handle, args.ignore_missing
+            )
+        except ErrorMessage as err:
+            bail(err.args[0])
+        print()
+        for msg in verifications:
+            print(msg)
+        print()
     else:
         bail(
-            "Signing mode not one of {sha256sum, git}; a newer version of this utility might support the necessary mode."
+            "Signing mode not one of {sha256sum, git, docker}; a newer version of this utility might support the necessary mode."
         )
 
     for warnmsg in warnings:

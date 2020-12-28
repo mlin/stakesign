@@ -71,7 +71,7 @@ Trusting local exe:	/usr/bin/sha256sum
 
 ```
 
-See [doc/Signing-MEW.md](doc/Signing-MEW.md) for a walkthrough using [MyEtherWallet](https://www.myetherwallet.com/) to complete the process. Other wallets that let you paste the transaction input hex string (aka "contract data") should work too. (Offloading this for now has allowed our prototype code to avoid handling any real cryptography.)
+See [doc/Signing-MEW.md](doc/Signing-MEW.md) for a walkthrough using [MyEtherWallet](https://www.myetherwallet.com/) to complete the process. Other wallets that let you paste the transaction input hex string (aka "contract data") should work too. We'll make this process smoother in the future; offloading it for now allowed our prototype code to avoid handling any real cryptography.
 
 Once your signature is published on the blockchain, attach the signature transaction ID to your products and point your users to here for `stakesign verify` or the manual procedure. (Hey, we've got to start somewhere...)
 
