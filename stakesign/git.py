@@ -52,7 +52,7 @@ def prepare(repo, revisions):
         warnings.append(
             f"The revisions to sign don't include the current working tree HEAD = {head_commit}"
         )
-    elif repo.status():
+    elif dirty(repo):
         warnings.append(
             "Working tree is dirty; signature will apply to clean commit HEAD = " + head_commit
         )
@@ -89,7 +89,7 @@ def verify(repo, revision, sigbody, ignore_missing=False):  # pylint: disable=R0
         warnings.add(
             f"Verified revision{revision} = {commit_to_verify} is not the working tree HEAD = {head_commit}"
         )
-    elif repo.status():
+    elif dirty(repo):
         warnings.add(
             "Working tree is dirty; signature applies to clean commit HEAD = " + head_commit
         )
@@ -177,3 +177,11 @@ def verify(repo, revision, sigbody, ignore_missing=False):  # pylint: disable=R0
             "Signature pertains to git SHA-1 digest(s); review git SHA-1 security risks and consider adopting git SHA-256 mode"
         )
     return verified, warnings
+
+
+def dirty(repo):
+    for v in repo.status().values():
+        if v & (1 << 14):  # GIT_STATUS_IGNORED
+            continue
+        return True
+    return False
