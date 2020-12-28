@@ -66,14 +66,14 @@ def verify(
 
         # First, check that if the signature includes tags, those tags don't point to a different
         # local image (exception: warning for :latest)
-        repo_tags_and_digests = []
+        signed_tags = []
         if "akaRepoTags" in sig_elt:
             assert isinstance(sig_elt["akaRepoTags"], list)
-            repo_tags_and_digests.extend(sig_elt["akaRepoTags"])
+            signed_tags.extend(sig_elt["akaRepoTags"])
         if "akaRepoDigests" in sig_elt:
             assert isinstance(sig_elt["akaRepoDigests"], list)
-            repo_tags_and_digests.extend(sig_elt["akaRepoDigests"])
-        for signed_handle in repo_tags_and_digests:
+            signed_tags.extend(sig_elt["akaRepoDigests"])
+        for signed_handle in signed_tags:
             assert isinstance(signed_handle, str)
             error_if(
                 len(local_images_index.get(signed_handle, set())) > 1,
@@ -85,12 +85,12 @@ def verify(
             ):
                 if signed_handle.endswith(":latest"):
                     warnings.add(
-                        f"The default tag '{signed_handle}' locally refers to a different image ID than was signed; make sure to use the full image ID or digest to get the correct image."
+                        f"The local default image tag '{signed_handle}' refers to a different image ID than was signed; be sure to use the full ID or digest to get the correct image."
                     )
                 else:
                     error_if(
                         True,
-                        f"The image tag/digest '{signed_handle}' locally refers to a different image ID than was signed",
+                        f"The local image tag '{signed_handle}' refers to a different image ID than was signed",
                     )
 
         if image_to_verify:
@@ -112,17 +112,23 @@ def verify(
                 assert len(local_image) == 1
                 local_image = client.images.get(next(iter(local_image)))
             else:
-                warnings.add("Not all of the images covered by the signature are available locally")
+                warnings.add("The transaction signs one or more images that aren't present locally")
                 continue
 
-        local_tags_and_digests = []
+        local_tags = []
         if local_image.attrs.get("RepoTags"):
-            local_tags_and_digests.extend(local_image.attrs["RepoTags"])
+            local_tags.extend(local_image.attrs["RepoTags"])
         if local_image.attrs.get("RepoDigests"):
-            local_tags_and_digests.extend(local_image.attrs["RepoDigests"])
+            local_tags.extend(local_image.attrs["RepoDigests"])
+        common_tags = set(local_tags).intersection(set(signed_tags))
+
         aka_msg = ""
-        if local_tags_and_digests:
-            aka_msg = ", aka: " + " ".join(local_tags_and_digests)
+        if common_tags:
+            aka_msg = ", aka: " + " ".join(sorted(common_tags))
+        elif signed_tags and local_tags:
+            warnings.add(
+                f"Image ID = {local_image.id} was signed, but under different tag(s) than it's known by locally; double-check it's the intended image if selecting by tag."
+            )
         verified.append("Verified image ID = " + local_image.id + aka_msg)
 
     error_if(not verified, "No image verified")

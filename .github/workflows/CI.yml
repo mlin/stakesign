@@ -40,4 +40,4 @@ jobs:
     - name: requirements
       run: pip3 install -r requirements.txt
     - name: prove
-      run: prove -v test/*.t
+      run: prove -v test/cli.t  # exclude docker.t since macOS worker doesn't docker

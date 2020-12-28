@@ -7,7 +7,7 @@ $ git clone --branch v1.1.0 https://github.com/mlin/spVCF.git && cd spVCF
 $ stakesign verify 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483
 ```
 
-This checks whether the transaction signs the working tree HEAD; or specify `--git-revision R` to check a different local revision R.
+This checks whether the transaction signs the working tree HEAD; or specify `--git R` to check a different local revision R.
 
 To prepare signature payloads for commits or tags,
 
@@ -35,7 +35,7 @@ $ docker pull quay.io/mlin/glnexus:v1.2.7
 $ stakesign verify 0xXYZ
 ```
 
-This will report all local images covered by the signature; specify `--docker-image I` to focus on one local image (I = ID, digest, or tag).
+This reports all local images covered by the signature; specify `--docker I` to focus on one local image (I = ID, digest, or tag).
 
 To prepare signature payloads for a local image,
 
