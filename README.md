@@ -2,7 +2,7 @@
 
 ### Sign files via blockchain + put your money where your mouth is
 
-This project helps open-source developers, and other DIY-types, who'd like to affix user-verifiable **digital signatures on files, code, annd Docker images**. It provides a way to **sign with a cryptocurrency wallet**, instead of a separate GnuPG keypair or X.509 certificate.
+This project helps open-source developers, and other DIY-types, who'd like to affix user-verifiable **digital signatures on files, code, and container images**. It provides a way to **sign with a cryptocurrency wallet**, instead of a separate GnuPG keypair or X.509 certificate.
 
 It furthermore defines that **signatures remain valid only while the signing address holds a *stake* of unspent cryptocurrency**. The stake bonds the publisher to keep their signing key safe & secure, even if they lose interest in the signed products; or otherwise, allows for its revocation with immediate, global effect. These properties aren't as easily achieved by other P2P signing mechanisms.
 
