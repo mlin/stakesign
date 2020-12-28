@@ -76,6 +76,18 @@ See [doc/Signing-MEW.md](doc/Signing-MEW.md) for a walkthrough using [MyEtherWal
 Once your signature is published on the blockchain, attach the signature transaction ID to your products and point your users to here for `stakesign verify` or the manual procedure. (Hey, we've got to start somewhere...)
 
 ### Signing git revisions & Docker images
+
+The tool has dedicated modes for signing git commits & tags and Docker images. Verification examples:
+
+```
+$ git clone --branch v1.1.0 https://github.com/mlin/spVCF.git && cd spVCF
+$ stakesign verify 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483
+$ docker pull quay.io/mlin/glnexus:v1.2.5 && docker pull quay.io/mlin/glnexus:v1.2.6
+$ stakesign verify 0xd071c0e8fbcbcab8b92f9098c5250d7e1c003f222c94fe0729669bae02ae3acf
+```
+
+**See [docs/git_docker.md](docs/git_docker.md) for full detais**
+
 ### Off-chain signatures
 
 *To be written*
