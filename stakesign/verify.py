@@ -302,7 +302,7 @@ def cli(args):  # pylint: disable=R0912,R0914,R0915
         print_tsv("Local git repository:", repo_dir)
         print_tsv("  Local git revision:", revision)
         try:
-            msg, warnings = verify(repo, revision, body)
+            msg, warnings = verify(repo, revision, body, ignore_missing=args.ignore_missing)
         except ErrorMessage as err:
             bail(err.args[0])
         print()

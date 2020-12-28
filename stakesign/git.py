@@ -66,7 +66,7 @@ def prepare(repo, revisions):
     ), warnings
 
 
-def verify(repo, revision, sigbody):  # pylint: disable=R0912,R0915
+def verify(repo, revision, sigbody, ignore_missing=False):  # pylint: disable=R0912,R0915
     """
     Verify that signature body includes a valid signature of revision.
     """
@@ -100,67 +100,80 @@ def verify(repo, revision, sigbody):  # pylint: disable=R0912,R0915
     # Look for signature of commit_to_verify
     # Warning about warning messages: sigbody comes off the blockchain, so we shouldn't include
     # anything from it in warning messages without validation (in case it is malicious)
-    for line in sigbody.split(b"\n"):  # pylint: disable=R1702
-        if not line:
-            continue
+    lines = [line for line in sigbody.split(b"\n") if line]
+    for line in lines:  # pylint: disable=R1702
         try:
             sig_elt = json.loads(line.decode())
             assert isinstance(sig_elt.get("commit"), str)
         except:
             error_if(True, "Invalid signature syntax")
-        if sig_elt["commit"] == commit_to_verify:
-            if verified is None:
-                verified = f"Verified: local revision {revision} = signed commit {commit_to_verify}"
-            if "tag" in sig_elt:
-                assert isinstance(sig_elt["tag"], str)
-                assert "tagObject" not in sig_elt or isinstance(sig_elt["tagObject"], str)
-                local_tag = None
-                try:
-                    local_tag = repo.revparse_ext(sig_elt["tag"])
-                except KeyError:
+        if not repo.get(sig_elt["commit"]):
+            error_if(
+                not ignore_missing,
+                (
+                    "Signed commit missing from local repository"
+                    if len(lines) <= 1
+                    else "Signed commit(s) missing from local repository; try --ignore-missing if OK for some but not all to be present"
+                ),
+            )
+            warnings.add("One or more signed commit(s) missing from local repository")
+        # If the signature includes tags, make sure they don't refer to commits other than the
+        # signed ones. There are several cases to deal with here as the signed & local tags could
+        # each be either lightweight or annotated.
+        local_tag = None
+        if "tag" in sig_elt:
+            assert isinstance(sig_elt["tag"], str)
+            assert "tagObject" not in sig_elt or isinstance(sig_elt["tagObject"], str)
+            try:
+                local_tag = repo.revparse_ext(sig_elt["tag"])
+            except KeyError:
+                error_if(
+                    not ignore_missing,
+                    "Signed tag(s) missing from local repository; try --ignore-missing if this is OK",
+                )
+                warnings.add("One or more signed tag(s) missing from local repository")
+                local_tag = (None, None)
+            if isinstance(local_tag[0], Commit):  # local lightweight tag
+                assert isinstance(local_tag[1], Reference)
+                error_if(
+                    not local_tag[1].name.startswith("refs/tags/"),
+                    "The signed tag refers locally to something else: " + local_tag[1].name,
+                )
+                error_if(
+                    local_tag[0].hex != sig_elt["commit"],
+                    f"The local tag '{local_tag[1].shorthand}' refers to a different commit than the signed tag",
+                )
+                if "tagObject" in sig_elt:
                     warnings.add(
-                        "The signature named a tag for this commit, but the tag is absent locally"
+                        f"The local tag '{local_tag[1].shorthand}' is lightweight, while the signed tag was annotated"
                     )
-                    continue
-                # Several cases to deal with here, as signed & local tags could each be either
-                # lightweight or annotated
-                if isinstance(local_tag[0], Commit):  # local lightweight tag
-                    assert isinstance(local_tag[1], Reference)
+            elif isinstance(local_tag[0], Tag):  # local annotated tag
+                if "tagObject" in sig_elt:
                     error_if(
-                        not local_tag[1].name.startswith("refs/tags/"),
-                        "The signed tag refers locally to something else: " + local_tag[1].name,
+                        sig_elt["tagObject"] != local_tag[0].hex,
+                        f"The local tag '{local_tag[0].name}' = {local_tag[0].hex} differs from the signed tag in annotations (although they share the same name and commit reference)",
                     )
-                    error_if(
-                        local_tag[0].hex != commit_to_verify,
-                        f"The local tag '{local_tag[1].shorthand}' refers to a different commit than the signed tag",
-                    )
-                    if "tagObject" in sig_elt:
-                        warnings.add(
-                            f"The local tag '{local_tag[1].shorthand}' is lightweight, while the signed tag was annotated"
-                        )
-                    verified = f"Verified: local revision {revision} = signed tag {local_tag[1].shorthand} (commit {commit_to_verify})"
-                elif isinstance(local_tag[0], Tag):  # local annotated tag
-                    if "tagObject" in sig_elt:
-                        error_if(
-                            sig_elt["tagObject"] != local_tag[0].hex,
-                            f"The local tag '{local_tag[0].name}' = {local_tag[0].hex} differs from the signed tag in annotations (although they share the same name and commit reference)",
-                        )
-                    else:
-                        error_if(
-                            local_tag[0].target.hex != commit_to_verify,
-                            f"The local annotated tag '{local_tag[0].name}' = {local_tag[0].hex} refers to a different commit than the signed tag",
-                        )
-                        warnings.add(
-                            f"The local tag '{local_tag[1].shorthand}' is annotated, while the signed tag was lightweight"
-                        )
-                    verified = f"Verified: local revision {revision} = signed tag {local_tag[1].shorthand} (commit {commit_to_verify})"
-                    all_sha256 = all_sha256 and len(local_tag[0].hex) == 64
                 else:
-                    assert False
+                    error_if(
+                        local_tag[0].target.hex != sig_elt["commit"],
+                        f"The local annotated tag '{local_tag[0].name}' = {local_tag[0].hex} refers to a different commit than the signed tag",
+                    )
+                    warnings.add(
+                        f"The local tag '{local_tag[1].shorthand}' is annotated, while the signed tag was lightweight"
+                    )
+                all_sha256 = all_sha256 and len(local_tag[0].hex) == 64
+            elif local_tag[0] is not None:
+                assert False
+        # At last...check whether sig_elt signs the desired commit
+        if sig_elt["commit"] == commit_to_verify:
+            if local_tag and local_tag[1]:
+                verified = f"Verified: local revision {revision} = signed tag {local_tag[1].shorthand} (commit {commit_to_verify})"
+            elif verified is None:
+                verified = f"Verified: local revision {revision} = signed commit {commit_to_verify}"
 
     error_if(not verified, f"Signature doesn't apply to {revision} ({commit_to_verify})")
     if not all_sha256:
         warnings.add(
-            "Signature pertains to git SHA-1 digest; review git SHA-1 security risks and consider adopting git SHA-256 mode"
+            "Signature pertains to git SHA-1 digest(s); review git SHA-1 security risks and consider adopting git SHA-256 mode"
         )
     return verified, warnings

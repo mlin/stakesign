@@ -56,8 +56,6 @@ def verify(
     warnings = set()
     lines = [line for line in sigbody.split(b"\n") if line]
     for line in lines:
-        if not line:
-            continue
         try:
             sig_elt = json.loads(line.decode())
             assert isinstance(sig_elt.get("imageId"), str)
@@ -101,9 +99,9 @@ def verify(
             local_image = local_images_index.get(sig_elt["imageId"])
             error_if(
                 not (ignore_missing or local_image),
-                "Signed image not available locally"
+                "Signed image missing locally"
                 + (
-                    "; try --ignore-missing if you expect some but not all to be present"
+                    "; try --ignore-missing if OK for some but not all to be missing"
                     if len(lines) > 1
                     else ""
                 ),
@@ -112,7 +110,7 @@ def verify(
                 assert len(local_image) == 1
                 local_image = client.images.get(next(iter(local_image)))
             else:
-                warnings.add("The transaction signs one or more images that aren't present locally")
+                warnings.add("The transaction signs one or more images that are missing locally")
                 continue
 
         local_tags = []

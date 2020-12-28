@@ -13,7 +13,7 @@ stakesign="python3 -m stakesign"
 export TMPDIR=$(mktemp -d -t stakesign-test-XXXXXX)
 cd "$TMPDIR"
 
-plan tests 31
+plan tests 35
 
 ###################################################################################################
 # stakesign verify
@@ -102,21 +102,31 @@ git -C spVCF checkout 20201226
 $stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483
 is "$?" "0" "verify lightweight tag"
 git -C spVCF tag -d 20201226
-$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483
-is "$?" "0" "verify lightweight tag missing from local"
+$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483 2> >(tee stderr.log >&2)
+is "$?" "1" "verify lightweight tag missing from local"
+grep --silent "missing from local repository" stderr.log
+is "$?" "0" "verify lightweight tag missing from local error message"
+$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483 --ignore-missing
+is "$?" "0" "verify lightweight tag missing from local --ignore-missing"
 git -C spVCF tag 20201226 v1.1.0
 $stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483 2> >(tee stderr.log >&2)
 is "$?" "1" "reject local tag referring to wrong commit"
 grep --silent "refers to a different commit" stderr.log
 is "$?" "0" "reject local tag for correct reason"
+git -C spVCF tag -d 20201226
+git -C spVCF tag 20201226 46e1bcbbb467594aed9b9d4c11822da6b0abead5
 $stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483 --git v1.0.0 | tee stdout.log
 is "$?" "0" "verify annotated tag"
 grep --silent 8851a121e5198d74eba19387628711d305d54e33 stdout.log
 is "$?" "0" "verify annotated tag 2"
 git -C spVCF checkout v1.0.0
 git -C spVCF tag -d v1.0.0
-$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483
-is "$?" "0" "verify annotated tag missing from local"
+$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483 2> >(tee stderr.log >&2)
+is "$?" "1" "verify annotated tag missing from local"
+grep --silent "missing from local repository" stderr.log
+is "$?" "0" "verify annotated tag missing from local error message"
+$stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483 --ignore-missing
+is "$?" "0" "verify annotated tag missing from local --ignore-missing"
 git -C spVCF tag -a v1.0.0 8851a121e5198d74eba19387628711d305d54e33 -m 'gotcha'
 $stakesign verify -C spVCF 0x248d9fac23ab037111c4bffdf25dd09f9dbdf1c34c6114365f0bdbe50294c483 2> >(tee stderr.log >&2)
 is "$?" "1" "reject tag with right commit but different annotations"
